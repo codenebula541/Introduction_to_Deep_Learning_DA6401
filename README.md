@@ -14,3 +14,14 @@ Additionally, we will use **Weights & Biases (Wandb.ai)** to log, visualize, and
 - The **Fashion-MNIST dataset** consists of **28x28 pixel grayscale images** belonging to **10 different classes** (e.g., shirts, shoes, bags).  
 - The goal is to train a neural network to classify images into these categories.  
 
+## Getting Started  
+### 1. Clone the Repository  
+```sh
+git clone https://github.com/your-username/your-repo.git
+cd your-repo
+pip install numpy pandas wandb
+import wandb
+wandb.init(project="backpropagation-fashion-mnist")
+python train.py
+```
+## Results
