@@ -1,3 +1,4 @@
+// loading the sample images form FASHION-MNIST dataset
 import numpy as np
 import wandb
 from keras.datasets import fashion_mnist
