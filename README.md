@@ -17,6 +17,20 @@ Additionally, we will use **Weights & Biases (Wandb.ai)** to log, visualize, and
 - The goal is to train a neural network to classify images into these categories.  
 
 ## Getting Started  
+
+Optimizers implemented:
+
+SGD - Stochastic Gradient Descent
+Momentum - Momentum SGD
+NAG - Nesterov Accelerated Gradient (optimized version)
+RMSProp - Root Mean Square Propagation
+Adam - Adaptive Moment Estimation
+Nadam - Nesterov Adaptive Moment Estimation
+Loss functions implemented:
+
+Cross Entropy
+Mean Squared Error
+The default values set in the file train.py are from hyperparameter tuning done using wandb sweeps
 ### 1. Clone the Repository  
 ```sh
 git clone https://github.com/your-username/your-repo.git
