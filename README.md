@@ -1,5 +1,7 @@
 # Backpropagation and Experiment Tracking with Wandb.ai  
 
+wandb report link: https://wandb.ai/saurabh541-indian-institute-of-technology-madras/DA6401-Assignment1/reports/DA6401-Assignment1--VmlldzoxMTcxODMyNw  
+
 ## Overview  
 This project involves implementing a **feedforward neural network** from scratch using **backpropagation** and **gradient descent** (along with its variants) for a classification task. The model will be trained on the **Fashion-MNIST dataset**, which consists of 28x28 grayscale images categorized into 10 different classes.  
 
