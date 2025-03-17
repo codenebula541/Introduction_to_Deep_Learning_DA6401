@@ -20,16 +20,16 @@ Additionally, we will use **Weights & Biases (Wandb.ai)** to log, visualize, and
 
 Optimizers implemented:
 
-SGD - Stochastic Gradient Descent
-Momentum - Momentum SGD
-NAG - Nesterov Accelerated Gradient (optimized version)
-RMSProp - Root Mean Square Propagation
-Adam - Adaptive Moment Estimation
-Nadam - Nesterov Adaptive Moment Estimation
-Loss functions implemented:
+SGD - Stochastic Gradient Descent  
+Momentum - Momentum SGD  
+NAG - Nesterov Accelerated Gradient (optimized version)  
+RMSProp - Root Mean Square Propagation  
+Adam - Adaptive Moment Estimation  
+Nadam - Nesterov Adaptive Moment Estimation  
+Loss functions implemented:  
 
-Cross Entropy
-Mean Squared Error
+Cross Entropy  
+Mean Squared Error   
 The default values set in the file train.py are from hyperparameter tuning done using wandb sweeps
 ### 1. Clone the Repository  
 ```sh
