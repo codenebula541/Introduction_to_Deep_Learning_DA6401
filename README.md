@@ -40,4 +40,4 @@ import wandb
 wandb.init(project="backpropagation-fashion-mnist")
 python train.py
 ```
-## Results
+
