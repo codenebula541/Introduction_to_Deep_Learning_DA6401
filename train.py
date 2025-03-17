@@ -10,33 +10,34 @@ import wandb
 from keras.datasets import fashion_mnist
 from keras.utils import to_categorical
 
+# -------------------------------
+# Sweep Configuration for W&B
+# -------------------------------
 sweep_config = {
-    'name': "fixed_config",
-    'method': 'grid',
-    'metric': {'name': 'val_accuracy', 'goal': 'maximize'},
+    'name': "saurabh_sahu",
+    'method': 'bayes',
+    'metric': {
+        'name': 'val_accuracy',
+        'goal': 'maximize'
+    },
     'parameters': {
-        'hiddenlayers': {'values': [5]},
-        'num_epochs': {'values': [10]},
-        'hiddennodes': {'values': [128]},
-        'learning_rate': {'values': [0.0001]},
-        'initializer': {'values': ["xavier"]},
-        'batch_size': {'values': [16]},
-        'opt': {'values': ["adam"]},
-        'activation_func': {'values': ["relu"]},
-        'weight_decay': {'values': [0.5]}
+        'hiddenlayers': {'values': [3, 4, 5]},
+        'num_epochs': {'values': [5, 10]},
+        'hiddennodes': {'values': [32, 64, 128]},
+        'learning_rate': {'values': [1e-3, 1e-4]},
+        'initializer': {'values': ["random", "xavier"]},
+        'batch_size': {'values': [16, 32, 64]},
+        'opt': {'values': ["sgd", "momentum", "nesterov", "rmsprop", "adam", "nadam"]},
+        'activation_func': {'values': ["sigmoid", "tanh", "relu"]},
+        'weight_decay': {'values': [0, 0.0005, 0.5]}
     }
 }
 
-sweep_id = wandb.sweep(sweep_config, project="DA6401-Assignment1")
+sweep_id = wandb.sweep(sweep_config, project="DA6401-Assignment1_12")  #sweep_id is linked to the project name
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import wandb
-from keras.datasets import fashion_mnist
-from keras.utils import to_categorical
-from sklearn.metrics import confusion_matrix
+
+
 
 # -------------------------------
 # Activation functions and derivatives
@@ -80,14 +81,15 @@ def activation_derivative(a, act_type):
         raise ValueError("Unsupported activation type")
 
 def softmax(z):
-    z = z - np.max(z, keepdims=True)  # numerical stability
+    # subtract max for numerical stability
+    z = z - np.max(z)
     exp_z = np.exp(z)
-    return exp_z / np.sum(exp_z, keepdims=True)
+    return exp_z / np.sum(exp_z)
 
 # -------------------------------
 # Weight initialization function
 # -------------------------------
-def initialize_parameters(layer_sizes, weight_init='random'):
+def initialize_parameters(layer_sizes, weight_init='xavier'):
     weights = []
     biases = []
     for i in range(len(layer_sizes)-1):
@@ -106,7 +108,7 @@ def initialize_parameters(layer_sizes, weight_init='random'):
 # -------------------------------
 # Forward propagation function
 # -------------------------------
-def forward_propagation(x, weights, biases, activation_type='sigmoid'):
+def forward_propagation(x, weights, biases, activation_type='relu'):
     a_values = []
     h_values = [x]  # h_values[0] is input; will remove later.
     L = len(weights)
@@ -118,13 +120,14 @@ def forward_propagation(x, weights, biases, activation_type='sigmoid'):
         else:
             h = activation(a, activation_type)
         h_values.append(h)
-    h_values = h_values[1:]  # remove the input so that h_values[0] is the output of the first layer.
+    # Remove the input so that h_values[0] is now the output of the first layer.
+    h_values = h_values[1:]
     return a_values, h_values
 
 # -------------------------------
 # Backpropagation function
 # -------------------------------
-def backpropagation(a_values, h_values, weights, biases, x, y_true, activation_type='sigmoid'):
+def backpropagation(a_values, h_values, weights, biases, x, y_true, activation_type='relu'):
     L = len(weights)
     grad_weights = [np.zeros_like(W) for W in weights]
     grad_biases  = [np.zeros_like(b) for b in biases]
@@ -243,8 +246,8 @@ def update_parameters(weights, biases, grad_weights, grad_biases, optimizer_stat
 # -------------------------------
 # Training function using mini-batch gradient descent with optimizer flexibility and validation split
 # -------------------------------
-def train_network(X, Y, weights, biases, epochs, learning_rate, batch_size=32,
-                  activation_type='sigmoid', weight_decay=0.0, optimizer='sgd', val_split=0.1, **optimizer_kwargs):
+def train_network(X, Y, weights, biases, epochs, learning_rate, batch_size=16,
+                  activation_type='relu', weight_decay=0.0, optimizer='nadam', val_split=0.1, **optimizer_kwargs):
 
     m = X.shape[0]
     # Split data into training and validation sets
@@ -255,6 +258,9 @@ def train_network(X, Y, weights, biases, epochs, learning_rate, batch_size=32,
     m_train = X_train.shape[0]
     num_batches = int(np.ceil(m_train / batch_size))
     optimizer_state = initialize_optimizer_state(weights, biases, optimizer, **optimizer_kwargs)
+
+    # val_history = []
+    # train_history= []
 
     for epoch in range(epochs):
         total_loss = 0
@@ -286,14 +292,9 @@ def train_network(X, Y, weights, biases, epochs, learning_rate, batch_size=32,
                     batch_grad_weights[j] += grad_w[j]
                     batch_grad_biases[j] += grad_b[j]
 
-            # Compute averaged gradients over the mini-batch and add weight decay
-            grad_w_avg_list = []
-            grad_b_avg_list = []
             for j in range(len(weights)):
                 grad_w_avg = batch_grad_weights[j] / batch_size_actual + weight_decay * weights[j]
                 grad_b_avg = batch_grad_biases[j] / batch_size_actual
-                grad_w_avg_list.append(grad_w_avg)
-                grad_b_avg_list.append(grad_b_avg)
             weights, biases, optimizer_state = update_parameters(weights, biases, batch_grad_weights, batch_grad_biases, optimizer_state, optimizer, learning_rate)
             total_loss += batch_loss
 
@@ -324,6 +325,12 @@ def train_network(X, Y, weights, biases, epochs, learning_rate, batch_size=32,
         avg_val_loss = val_loss / m_val
         val_accuracy = (val_correct / m_val) * 100
 
+        # val_history.append({'val_loss': avg_val_loss, 'val_accuracy': val_accuracy})
+        # # After each epoch, update your history lists:
+        # train_history.append({'train_loss': avg_train_loss, 'train_accuracy': train_accuracy})
+        # val_history.append({'val_loss': avg_val_loss, 'val_accuracy': val_accuracy})
+
+        # Then log to W&B:
         wandb.log({
           "train_loss": avg_train_loss,
           "train_accuracy": train_accuracy,
@@ -336,27 +343,20 @@ def train_network(X, Y, weights, biases, epochs, learning_rate, batch_size=32,
     return weights, biases
 
 # -------------------------------
-# Run Experiment Function for W&B Sweep (Best Performing Configuration)
+# Run Experiment Function for W&B Sweep
 # -------------------------------
 def run_experiment():
-    # Instead of using cfg, we use our best performing configuration values directly.
-    # Best performing values:
-    best_num_epochs = 10
-    best_learning_rate = 0.0001
-    best_batch_size = 16
-    best_hiddenlayers = 5
-    best_hiddennodes = 128
-    best_initializer = 'xavier'
-    best_activation_func = 'relu'
-    best_weight_decay = 0.5
-    best_optimizer = 'adam'
-
-    run = wandb.init()
-    run.name = f"BestConfig: epochs {best_num_epochs} hidden_layers {best_hiddenlayers} hidden_size {best_hiddennodes} learning_rate {best_learning_rate} opt {best_optimizer} batch_size {best_batch_size} init {best_initializer} activation {best_activation_func} weight_decay {best_weight_decay}"
+    run = wandb.init(config=sweep_config)
+    cfg = run.config
+    run.name = f"epochs {cfg.num_epochs} hidden_layers {cfg.hiddenlayers} hidden_size {cfg.hiddennodes} learning_rate {cfg.learning_rate} opt {cfg.opt} batch_size {cfg.batch_size} init {cfg.initializer} activation {cfg.activation_func} weight_decay {cfg.weight_decay}"
 
     # Load Fashion-MNIST data
     (x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
-    # Preprocess: Flatten images and normalize pixel values to [0,1]
+    # For faster experimentation, you can use a subset:
+    # x_train = x_train[:10000]
+    # y_train = y_train[:10000]
+
+    # Preprocess: Flatten images and normalize
     x_train = x_train.reshape(x_train.shape[0], -1) / 255.0
     x_test  = x_test.reshape(x_test.shape[0], -1) / 255.0
     y_train = to_categorical(y_train, 10)
@@ -365,56 +365,28 @@ def run_experiment():
     # Set network architecture
     input_size = 784
     num_classes = 10
-    layer_sizes = [input_size] + [best_hiddennodes] * best_hiddenlayers + [num_classes]
+    layer_sizes = [input_size] + [cfg.hiddennodes] * cfg.hiddenlayers + [num_classes]
 
     # Initialize parameters
-    weights, biases = initialize_parameters(layer_sizes, weight_init=best_initializer.lower())
+    weights, biases = initialize_parameters(layer_sizes, weight_init=cfg.initializer.lower())
 
     # Train model (using 10% of training data as validation)
     weights, biases = train_network(x_train, y_train, weights, biases,
-                                    epochs=best_num_epochs,
-                                    learning_rate=best_learning_rate,
-                                    batch_size=best_batch_size,
-                                    activation_type=best_activation_func,
-                                    weight_decay=best_weight_decay,
-                                    optimizer=best_optimizer.lower(),
-                                    **{'momentum': 0.9, 'decay_rate': 0.9, 'epsilon': 1e-8, 'beta1': 0.9, 'beta2': 0.999},
-                                    val_split=0.1)
-
-    # -------------------------------
-    # Test Set Evaluation and Confusion Matrix
-    # -------------------------------
-    test_predictions = []
-    test_labels = []
-    m_test = x_test.shape[0]
-    for i in range(m_test):
-        x = x_test[i].reshape(-1, 1)
-        _, h_vals = forward_propagation(x, weights, biases, activation_type=best_activation_func)
-        y_hat = h_vals[-1]
-        pred = np.argmax(y_hat)
-        test_predictions.append(pred)
-        true_label = np.argmax(y_test[i])
-        test_labels.append(true_label)
-
-    test_accuracy = np.mean(np.array(test_predictions) == np.array(test_labels)) * 100
-    wandb.log({"final_test_accuracy": test_accuracy})
-    print("Test Accuracy: {:.2f}%".format(test_accuracy))
-
-    cm = confusion_matrix(test_labels, test_predictions)
-    plt.figure(figsize=(8,6))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
-                xticklabels=[str(i) for i in range(num_classes)],
-                yticklabels=[str(i) for i in range(num_classes)])
-    plt.xlabel("Predicted Label")
-    plt.ylabel("True Label")
-    plt.title("Confusion Matrix on Fashion-MNIST Test Set")
-    plt.show()
-
+                                                  epochs=cfg.num_epochs,
+                                                  learning_rate=cfg.learning_rate,
+                                                  batch_size=cfg.batch_size,
+                                                  activation_type=cfg.activation_func,
+                                                  weight_decay=cfg.weight_decay,
+                                                  optimizer=cfg.opt.lower(),
+                                                  **{'momentum': 0.9, 'decay_rate': 0.9, 'epsilon': 1e-8, 'beta1': 0.9, 'beta2': 0.999},
+                                                  val_split=0.1)
+    # # Log final validation metrics
+    # final_val_acc = val_history[-1]['val_accuracy']
+    # final_val_loss = val_history[-1]['val_loss']
+    # wandb.log({"final_val_accuracy": final_val_acc, "final_val_loss": final_val_loss})
     run.finish()
 
 # -------------------------------
-# Run W&B Sweep Agent for the Best Configuration
+# Run W&B Sweep Agent
 # -------------------------------
-wandb.agent("fmm03ezl", run_experiment, project="DA6401-Assignment1", count=1)
-
-
+wandb.agent("czmtxmrk", run_experiment, project="DA6401-Assignment1_12", count=30)
